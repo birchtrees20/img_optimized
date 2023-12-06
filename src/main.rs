@@ -9,10 +9,10 @@ fn main() {
     let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
     //settings
-    let num_runs = 2;
+    let num_runs = 15;
     let chunk_size = 100;
 
-    //par seq
+    //seq
     delete_output_content(output_folder);
     let total_start_time = Instant::now();
     for _ in 0..num_runs {
@@ -20,7 +20,7 @@ fn main() {
         process_images_seq(input_folder, output_folder);
         let end_time = Instant::now();
         let elapsed_time = end_time - start_time;
-        println!("fu1: {:?}", elapsed_time);
+        println!("seq: {:?}", elapsed_time);
     }
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
@@ -35,7 +35,7 @@ fn main() {
         process_images_par_half(input_folder, output_folder);
         let end_time = Instant::now();
         let elapsed_time = end_time - start_time;
-        println!("fu1: {:?}", elapsed_time);
+        println!("par_half: {:?}", elapsed_time);
     }
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
@@ -50,7 +50,7 @@ fn main() {
         process_images_par_full1(input_folder, output_folder);
         let end_time = Instant::now();
         let elapsed_time = end_time - start_time;
-        println!("fu1: {:?}", elapsed_time);
+        println!("par_full_1: {:?}", elapsed_time);
     }
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
@@ -65,17 +65,13 @@ fn main() {
         process_images_par_full2(input_folder, output_folder, chunk_size);
         let end_time = Instant::now();
         let elapsed_time = end_time - start_time;
-        println!("fu2: {:?}", elapsed_time);
+        println!("par_full_2: {:?}", elapsed_time);
     }
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
 }
-
-
-
-
 
 fn process_images_seq(input_folder: &str, output_folder: &str) {
     //loop over all files in input folder
@@ -150,7 +146,7 @@ fn process_images_par_full1(input_folder: &str, output_folder: &str) {
 
             //check format
             if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || file_name.ends_with(".png") {
-                // Load the image
+                //load img
                 let mut img = image::open(&file_path).expect("Failed to open image");
 
                 //convert img to grey using multiple threads
@@ -182,7 +178,7 @@ fn process_images_par_full2(input_folder: &str, output_folder: &str, chunk_size:
 
             //check format
             if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || file_name.ends_with(".png") {
-                // Load the image
+                //load img
                 let mut img = image::open(&file_path).expect("Failed to open image");
 
                 //convert img to grey using multiple threads
@@ -226,7 +222,7 @@ fn convert_to_grayscale_par(input_img: &mut image::DynamicImage) {
         .par_chunks_mut(4) //DO NOT CHANGE
         .enumerate()
         .for_each(|(idx, pixel)| {
-            // Calculate the pixel position
+            //calc pixel pos
             let x = (idx % width as usize) as u32;
             let y = (idx / width as usize) as u32;
 
