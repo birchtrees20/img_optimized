@@ -24,12 +24,14 @@ fn main() {
             let _ = fs::remove_file(entry.path());
         });
 
+    delete_output_content(output_folder);
     let start_time = Instant::now();
     process_images_seq(input_folder, output_folder);
     let end_time = Instant::now();
     let elapsed_time = end_time - start_time;
     println!("seq: {:?}", elapsed_time);
 
+    delete_output_content(output_folder);
     let start_time = Instant::now();
     process_images_par(input_folder, output_folder);
     let end_time = Instant::now();
@@ -111,4 +113,13 @@ fn convert_to_grayscale(input_img: &DynamicImage) -> RgbaImage {
     }
 
     gray_img
+}
+
+fn delete_output_content(output_folder: &str) {
+    fs::read_dir(output_folder)
+    .expect("Failed to read folder")
+    .flat_map(|entry| entry)
+    .for_each(|entry| {
+        let _ = fs::remove_file(entry.path());
+    });
 }
