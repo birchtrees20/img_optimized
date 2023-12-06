@@ -23,7 +23,8 @@ fn main() {
         .for_each(|entry| {
             let _ = fs::remove_file(entry.path());
         });
-
+/* 
+    //fully sequential implementation
     delete_output_content(output_folder);
     let start_time = Instant::now();
     process_images_seq(input_folder, output_folder);
@@ -31,12 +32,32 @@ fn main() {
     let elapsed_time = end_time - start_time;
     println!("seq: {:?}", elapsed_time);
 
+    //half parallel implementation:
+    //images processed in par
+    //but color conversion seq over pixels
     delete_output_content(output_folder);
     let start_time = Instant::now();
     process_images_par(input_folder, output_folder);
     let end_time = Instant::now();
     let elapsed_time = end_time - start_time;
     println!("par: {:?}", elapsed_time);
+*/
+    //full parallel anc concurrent
+    //images processed in par
+    //color conversion in thread chunks
+    delete_output_content(output_folder);
+    let start_time = Instant::now();
+    process_images_par1(input_folder, output_folder);
+    let end_time = Instant::now();
+    let elapsed_time = end_time - start_time;
+    println!("fu1: {:?}", elapsed_time);
+
+    delete_output_content(output_folder);
+    let start_time = Instant::now();
+    process_images_par2(input_folder, output_folder);
+    let end_time = Instant::now();
+    let elapsed_time = end_time - start_time;
+    println!("fu2: {:?}", elapsed_time);
 }
 
 fn process_images_seq(input_folder: &str, output_folder: &str) {
@@ -95,6 +116,70 @@ fn process_images_par(input_folder: &str, output_folder: &str) {
         });
 }
 
+fn process_images_par1(input_folder: &str, output_folder: &str) {
+    //images to vector
+    let entries: Vec<_> = fs::read_dir(input_folder)
+        .expect("Failed to read input folder")
+        .filter_map(|entry| entry.ok())
+        .collect();
+
+    //par_iter_mut to parallelize the iteration over mutable references
+    entries
+        //into_par_iter allow ownership transfer
+        .into_par_iter()  
+        .for_each(|entry| {
+            let file_path = entry.path();
+            let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
+
+            //check format
+            if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || file_name.ends_with(".png") {
+                // Load the image
+                let mut img = image::open(&file_path).expect("Failed to open image");
+
+                //convert img to grey using multiple threads
+                convert_to_grayscale_par(&mut img);
+
+                //output path
+                let output_path = format!("{}/{}_output.jpg", output_folder, &file_name[..4]);
+
+                //save and export
+                img.save(output_path).expect("Failed to save image");
+            }
+        });
+}
+
+fn process_images_par2(input_folder: &str, output_folder: &str) {
+    //images to vector
+    let entries: Vec<_> = fs::read_dir(input_folder)
+        .expect("Failed to read input folder")
+        .filter_map(|entry| entry.ok())
+        .collect();
+
+    //par_iter_mut to parallelize the iteration over mutable references
+    entries
+        //into_par_iter allow ownership transfer
+        .into_par_iter()  
+        .for_each(|entry| {
+            let file_path = entry.path();
+            let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
+
+            //check format
+            if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || file_name.ends_with(".png") {
+                // Load the image
+                let mut img = image::open(&file_path).expect("Failed to open image");
+
+                //convert img to grey using multiple threads
+                convert_to_grayscale_multi_chunk(&mut img);
+
+                //output path
+                let output_path = format!("{}/{}_output.jpg", output_folder, &file_name[..4]);
+
+                //save and export
+                img.save(output_path).expect("Failed to save image");
+            }
+        });
+}
+
 fn convert_to_grayscale(input_img: &DynamicImage) -> RgbaImage {
     let (width, height) = input_img.dimensions();
     let mut gray_img = RgbaImage::new(width, height);
@@ -113,6 +198,80 @@ fn convert_to_grayscale(input_img: &DynamicImage) -> RgbaImage {
     }
 
     gray_img
+}
+
+fn convert_to_grayscale_par(input_img: &mut image::DynamicImage) {
+    let (width, height) = input_img.dimensions();
+    let mut gray_img = image::RgbaImage::new(width, height);
+
+    //par_chunks_mut to parallelize the iteration over mutable chunks
+    gray_img
+        .par_chunks_mut(4)
+        .enumerate()
+        .for_each(|(idx, pixel)| {
+            // Calculate the pixel position
+            let x = (idx % width as usize) as u32;
+            let y = (idx / width as usize) as u32;
+
+            //get pixel col
+            let input_pixel = input_img.get_pixel(x, y);
+
+            //calc grey scal val
+            let gray_value = (
+                0.299 * input_pixel[0] as f32 +
+                0.587 * input_pixel[1] as f32 +
+                0.114 * input_pixel[2] as f32
+            ) as u8;
+
+            //set new pixel in output img
+            pixel.copy_from_slice(&[gray_value, gray_value, gray_value, input_pixel[3]]);
+        });
+
+    *input_img = image::DynamicImage::ImageRgba8(gray_img);
+}
+
+fn convert_to_grayscale_multi_chunk(input_img: &mut DynamicImage) {
+    let (width, height) = input_img.dimensions();
+    let mut gray_img = RgbaImage::new(width, height);
+
+    //chunksize
+    let chunk_size = 10;
+
+    //par chunks
+    gray_img
+        .par_chunks_mut(4 * chunk_size)
+        .enumerate()
+        .for_each(|(chunk_idx, chunk)| {
+            //calc starting pixel
+            let start_pixel_idx = chunk_idx * chunk_size;
+
+            //iterate over pixels within the chunk
+            for pixel_offset in 0..chunk_size {
+                let pixel_idx = start_pixel_idx + pixel_offset;
+
+                //pixel pos
+                let x = (pixel_idx % width as usize) as u32;
+                let y = (pixel_idx / width as usize) as u32;
+
+                //get pix col
+                let input_pixel = input_img.get_pixel(x, y);
+
+                //calc grey val
+                let gray_value = (
+                    0.299 * input_pixel[0] as f32 +
+                    0.587 * input_pixel[1] as f32 +
+                    0.114 * input_pixel[2] as f32
+                ) as u8;
+
+                //set new pixel
+                let chunk_pixel_offset = pixel_offset * 4;
+                chunk[chunk_pixel_offset..chunk_pixel_offset + 4]
+                    .copy_from_slice(&[gray_value, gray_value, gray_value, input_pixel[3]]);
+            }
+        });
+
+    //update output image
+    *input_img = DynamicImage::ImageRgba8(gray_img);
 }
 
 fn delete_output_content(output_folder: &str) {
