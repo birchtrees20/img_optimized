@@ -13,7 +13,7 @@ greyscale conversion itself still occurs in sequential.
 
 fn main() {
     //set input and output folders
-    let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input";
+    let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input1";
     let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
     //remove all contents of output folder
@@ -23,6 +23,7 @@ fn main() {
         .for_each(|entry| {
             let _ = fs::remove_file(entry.path());
         });
+
 /* 
     //fully sequential implementation
     delete_output_content(output_folder);
@@ -52,9 +53,10 @@ fn main() {
     let elapsed_time = end_time - start_time;
     println!("fu1: {:?}", elapsed_time);
 
+    //greyscale chunked up
     delete_output_content(output_folder);
     let start_time = Instant::now();
-    process_images_par2(input_folder, output_folder);
+    process_images_par2(input_folder, output_folder, 100);
     let end_time = Instant::now();
     let elapsed_time = end_time - start_time;
     println!("fu2: {:?}", elapsed_time);
@@ -148,7 +150,7 @@ fn process_images_par1(input_folder: &str, output_folder: &str) {
         });
 }
 
-fn process_images_par2(input_folder: &str, output_folder: &str) {
+fn process_images_par2(input_folder: &str, output_folder: &str, chunk_size: usize) {
     //images to vector
     let entries: Vec<_> = fs::read_dir(input_folder)
         .expect("Failed to read input folder")
@@ -169,7 +171,7 @@ fn process_images_par2(input_folder: &str, output_folder: &str) {
                 let mut img = image::open(&file_path).expect("Failed to open image");
 
                 //convert img to grey using multiple threads
-                convert_to_grayscale_multi_chunk(&mut img);
+                convert_to_grayscale_multi_chunk(&mut img, chunk_size);
 
                 //output path
                 let output_path = format!("{}/{}_output.jpg", output_folder, &file_name[..4]);
@@ -206,7 +208,7 @@ fn convert_to_grayscale_par(input_img: &mut image::DynamicImage) {
 
     //par_chunks_mut to parallelize the iteration over mutable chunks
     gray_img
-        .par_chunks_mut(4)
+        .par_chunks_mut(4) //DO NOT CHANGE
         .enumerate()
         .for_each(|(idx, pixel)| {
             // Calculate the pixel position
@@ -230,12 +232,12 @@ fn convert_to_grayscale_par(input_img: &mut image::DynamicImage) {
     *input_img = image::DynamicImage::ImageRgba8(gray_img);
 }
 
-fn convert_to_grayscale_multi_chunk(input_img: &mut DynamicImage) {
+fn convert_to_grayscale_multi_chunk(input_img: &mut DynamicImage, chunk_size: usize) {
     let (width, height) = input_img.dimensions();
     let mut gray_img = RgbaImage::new(width, height);
 
     //chunksize
-    let chunk_size = 10;
+    //let chunk_size = 100;
 
     //par chunks
     gray_img
@@ -249,24 +251,27 @@ fn convert_to_grayscale_multi_chunk(input_img: &mut DynamicImage) {
             for pixel_offset in 0..chunk_size {
                 let pixel_idx = start_pixel_idx + pixel_offset;
 
-                //pixel pos
-                let x = (pixel_idx % width as usize) as u32;
-                let y = (pixel_idx / width as usize) as u32;
+                //check if pixel index is within bounds
+                if pixel_idx < width as usize * height as usize {
+                    //pixel pos
+                    let x = (pixel_idx % width as usize) as u32;
+                    let y = (pixel_idx / width as usize) as u32;
 
-                //get pix col
-                let input_pixel = input_img.get_pixel(x, y);
+                    //get pix col
+                    let input_pixel = input_img.get_pixel(x, y);
 
-                //calc grey val
-                let gray_value = (
-                    0.299 * input_pixel[0] as f32 +
-                    0.587 * input_pixel[1] as f32 +
-                    0.114 * input_pixel[2] as f32
-                ) as u8;
+                    //calc grey val
+                    let gray_value = (
+                        0.299 * input_pixel[0] as f32 +
+                        0.587 * input_pixel[1] as f32 +
+                        0.114 * input_pixel[2] as f32
+                    ) as u8;
 
-                //set new pixel
-                let chunk_pixel_offset = pixel_offset * 4;
-                chunk[chunk_pixel_offset..chunk_pixel_offset + 4]
-                    .copy_from_slice(&[gray_value, gray_value, gray_value, input_pixel[3]]);
+                    //set new pixel
+                    let chunk_pixel_offset = pixel_offset * 4;
+                    chunk[chunk_pixel_offset..chunk_pixel_offset + 4]
+                        .copy_from_slice(&[gray_value, gray_value, gray_value, input_pixel[3]]);
+                }
             }
         });
 
