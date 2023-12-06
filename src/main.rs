@@ -13,16 +13,12 @@ greyscale conversion itself still occurs in sequential.
 
 fn main() {
     //set input and output folders
-    let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input1";
+    let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input";
     let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
+
     //remove all contents of output folder
-    fs::read_dir(output_folder)
-        .expect("Failed to read folder")
-        .flat_map(|entry| entry)
-        .for_each(|entry| {
-            let _ = fs::remove_file(entry.path());
-        });
+    delete_output_content(output_folder);
 
 /* 
     //fully sequential implementation
@@ -54,12 +50,40 @@ fn main() {
     println!("fu1: {:?}", elapsed_time);
 
     //greyscale chunked up
+    /* 
     delete_output_content(output_folder);
     let start_time = Instant::now();
     process_images_par2(input_folder, output_folder, 100);
     let end_time = Instant::now();
     let elapsed_time = end_time - start_time;
     println!("fu2: {:?}", elapsed_time);
+    */
+
+    let num_runs = 10;
+
+    // Chunk size for parallel processing
+    let chunk_size = 100;
+
+    // Remove all contents of the output folder
+    delete_output_content(output_folder);
+
+    // Measure the total time for multiple runs
+    let total_start_time = Instant::now();
+
+    for _ in 0..num_runs {
+        let start_time = Instant::now();
+        process_images_par2(input_folder, output_folder, chunk_size);
+        let end_time = Instant::now();
+        let elapsed_time = end_time - start_time;
+        println!("fu2: {:?}", elapsed_time);
+    }
+
+    // Calculate average time
+    let total_end_time = Instant::now();
+    let total_elapsed_time = total_end_time - total_start_time;
+    let average_time = total_elapsed_time / num_runs as u32;
+    
+    println!("Average time for {} runs: {:?}", num_runs, average_time);
 }
 
 fn process_images_seq(input_folder: &str, output_folder: &str) {
