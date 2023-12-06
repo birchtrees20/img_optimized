@@ -3,14 +3,6 @@ use std::fs;
 use std::time::Instant;
 use rayon::prelude::*;
 
-/*
-Notes:
-
-image are worked on in threads using par_iter but the 
-greyscale conversion itself still occurs in sequential.
-
-*/
-
 fn main() {
     //set input and output folders
     let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input";
@@ -20,14 +12,9 @@ fn main() {
     let num_runs = 2;
     let chunk_size = 100;
 
-    //remove all contents of output folder
-    delete_output_content(output_folder);
-
     //par seq
     delete_output_content(output_folder);
-    // Measure the total time for multiple runs
     let total_start_time = Instant::now();
-
     for _ in 0..num_runs {
         let start_time = Instant::now();
         process_images_seq(input_folder, output_folder);
@@ -35,19 +22,14 @@ fn main() {
         let elapsed_time = end_time - start_time;
         println!("fu1: {:?}", elapsed_time);
     }
-    // Calculate average time
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
 
-
-
     //par half
     delete_output_content(output_folder);
-    // Measure the total time for multiple runs
     let total_start_time = Instant::now();
-
     for _ in 0..num_runs {
         let start_time = Instant::now();
         process_images_par_half(input_folder, output_folder);
@@ -55,19 +37,14 @@ fn main() {
         let elapsed_time = end_time - start_time;
         println!("fu1: {:?}", elapsed_time);
     }
-    // Calculate average time
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
 
-
-
     //par full 1
     delete_output_content(output_folder);
-    // Measure the total time for multiple runs
     let total_start_time = Instant::now();
-
     for _ in 0..num_runs {
         let start_time = Instant::now();
         process_images_par_full1(input_folder, output_folder);
@@ -75,21 +52,14 @@ fn main() {
         let elapsed_time = end_time - start_time;
         println!("fu1: {:?}", elapsed_time);
     }
-    // Calculate average time
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
-    
-
-
-
 
     //par full 2
     delete_output_content(output_folder);
-    // Measure the total time for multiple runs
     let total_start_time = Instant::now();
-
     for _ in 0..num_runs {
         let start_time = Instant::now();
         process_images_par_full2(input_folder, output_folder, chunk_size);
@@ -97,12 +67,10 @@ fn main() {
         let elapsed_time = end_time - start_time;
         println!("fu2: {:?}", elapsed_time);
     }
-    // Calculate average time
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
-
 }
 
 
