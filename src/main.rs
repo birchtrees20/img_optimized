@@ -16,75 +16,98 @@ fn main() {
     let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input";
     let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
+    //settings
+    let num_runs = 2;
+    let chunk_size = 100;
 
     //remove all contents of output folder
     delete_output_content(output_folder);
 
-/* 
-    //fully sequential implementation
+    //par seq
     delete_output_content(output_folder);
-    let start_time = Instant::now();
-    process_images_seq(input_folder, output_folder);
-    let end_time = Instant::now();
-    let elapsed_time = end_time - start_time;
-    println!("seq: {:?}", elapsed_time);
-
-    //half parallel implementation:
-    //images processed in par
-    //but color conversion seq over pixels
-    delete_output_content(output_folder);
-    let start_time = Instant::now();
-    process_images_par(input_folder, output_folder);
-    let end_time = Instant::now();
-    let elapsed_time = end_time - start_time;
-    println!("par: {:?}", elapsed_time);
-*/
-    //full parallel anc concurrent
-    //images processed in par
-    //color conversion in thread chunks
-    delete_output_content(output_folder);
-    let start_time = Instant::now();
-    process_images_par1(input_folder, output_folder);
-    let end_time = Instant::now();
-    let elapsed_time = end_time - start_time;
-    println!("fu1: {:?}", elapsed_time);
-
-    //greyscale chunked up
-    /* 
-    delete_output_content(output_folder);
-    let start_time = Instant::now();
-    process_images_par2(input_folder, output_folder, 100);
-    let end_time = Instant::now();
-    let elapsed_time = end_time - start_time;
-    println!("fu2: {:?}", elapsed_time);
-    */
-
-    let num_runs = 10;
-
-    // Chunk size for parallel processing
-    let chunk_size = 100;
-
-    // Remove all contents of the output folder
-    delete_output_content(output_folder);
-
     // Measure the total time for multiple runs
     let total_start_time = Instant::now();
 
     for _ in 0..num_runs {
         let start_time = Instant::now();
-        process_images_par2(input_folder, output_folder, chunk_size);
+        process_images_seq(input_folder, output_folder);
         let end_time = Instant::now();
         let elapsed_time = end_time - start_time;
-        println!("fu2: {:?}", elapsed_time);
+        println!("fu1: {:?}", elapsed_time);
     }
-
     // Calculate average time
     let total_end_time = Instant::now();
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
-    
     println!("Average time for {} runs: {:?}", num_runs, average_time);
+
+
+
+    //par half
+    delete_output_content(output_folder);
+    // Measure the total time for multiple runs
+    let total_start_time = Instant::now();
+
+    for _ in 0..num_runs {
+        let start_time = Instant::now();
+        process_images_par_half(input_folder, output_folder);
+        let end_time = Instant::now();
+        let elapsed_time = end_time - start_time;
+        println!("fu1: {:?}", elapsed_time);
+    }
+    // Calculate average time
+    let total_end_time = Instant::now();
+    let total_elapsed_time = total_end_time - total_start_time;
+    let average_time = total_elapsed_time / num_runs as u32;
+    println!("Average time for {} runs: {:?}", num_runs, average_time);
+
+
+
+    //par full 1
+    delete_output_content(output_folder);
+    // Measure the total time for multiple runs
+    let total_start_time = Instant::now();
+
+    for _ in 0..num_runs {
+        let start_time = Instant::now();
+        process_images_par_full1(input_folder, output_folder);
+        let end_time = Instant::now();
+        let elapsed_time = end_time - start_time;
+        println!("fu1: {:?}", elapsed_time);
+    }
+    // Calculate average time
+    let total_end_time = Instant::now();
+    let total_elapsed_time = total_end_time - total_start_time;
+    let average_time = total_elapsed_time / num_runs as u32;
+    println!("Average time for {} runs: {:?}", num_runs, average_time);
+    
+
+
+
+
+    //par full 2
+    delete_output_content(output_folder);
+    // Measure the total time for multiple runs
+    let total_start_time = Instant::now();
+
+    for _ in 0..num_runs {
+        let start_time = Instant::now();
+        process_images_par_full2(input_folder, output_folder, chunk_size);
+        let end_time = Instant::now();
+        let elapsed_time = end_time - start_time;
+        println!("fu2: {:?}", elapsed_time);
+    }
+    // Calculate average time
+    let total_end_time = Instant::now();
+    let total_elapsed_time = total_end_time - total_start_time;
+    let average_time = total_elapsed_time / num_runs as u32;
+    println!("Average time for {} runs: {:?}", num_runs, average_time);
+
 }
+
+
+
+
 
 fn process_images_seq(input_folder: &str, output_folder: &str) {
     //loop over all files in input folder
@@ -111,7 +134,7 @@ fn process_images_seq(input_folder: &str, output_folder: &str) {
     }
 }
 
-fn process_images_par(input_folder: &str, output_folder: &str) {
+fn process_images_par_half(input_folder: &str, output_folder: &str) {
     //read dir entries and represent in vector
     let entries: Vec<_> = fs::read_dir(input_folder)
         .expect("Failed to read input folder")
@@ -142,7 +165,7 @@ fn process_images_par(input_folder: &str, output_folder: &str) {
         });
 }
 
-fn process_images_par1(input_folder: &str, output_folder: &str) {
+fn process_images_par_full1(input_folder: &str, output_folder: &str) {
     //images to vector
     let entries: Vec<_> = fs::read_dir(input_folder)
         .expect("Failed to read input folder")
@@ -174,7 +197,7 @@ fn process_images_par1(input_folder: &str, output_folder: &str) {
         });
 }
 
-fn process_images_par2(input_folder: &str, output_folder: &str, chunk_size: usize) {
+fn process_images_par_full2(input_folder: &str, output_folder: &str, chunk_size: usize) {
     //images to vector
     let entries: Vec<_> = fs::read_dir(input_folder)
         .expect("Failed to read input folder")
@@ -195,7 +218,7 @@ fn process_images_par2(input_folder: &str, output_folder: &str, chunk_size: usiz
                 let mut img = image::open(&file_path).expect("Failed to open image");
 
                 //convert img to grey using multiple threads
-                convert_to_grayscale_multi_chunk(&mut img, chunk_size);
+                convert_to_grayscale_par_chunks(&mut img, chunk_size);
 
                 //output path
                 let output_path = format!("{}/{}_output.jpg", output_folder, &file_name[..4]);
@@ -256,7 +279,7 @@ fn convert_to_grayscale_par(input_img: &mut image::DynamicImage) {
     *input_img = image::DynamicImage::ImageRgba8(gray_img);
 }
 
-fn convert_to_grayscale_multi_chunk(input_img: &mut DynamicImage, chunk_size: usize) {
+fn convert_to_grayscale_par_chunks(input_img: &mut DynamicImage, chunk_size: usize) {
     let (width, height) = input_img.dimensions();
     let mut gray_img = RgbaImage::new(width, height);
 
