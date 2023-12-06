@@ -13,8 +13,8 @@ greyscale conversion itself still occurs in sequential.
 
 fn main() {
     //set input and output folders
-    let input_folder = r"C:\Users\paddy\Desktop\MUIC\Rust\final project\image1\input";
-    let output_folder = r"C:\Users\paddy\Desktop\MUIC\Rust\final project\image1\output";
+    let input_folder = r"C:\Users\paddy\Desktop\img_optimized\input";
+    let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
     //remove all contents of output folder
     fs::read_dir(output_folder)
