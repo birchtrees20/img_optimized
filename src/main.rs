@@ -9,9 +9,9 @@ fn main() {
     let output_folder = r"C:\Users\paddy\Desktop\img_optimized\output";
 
     //settings
-    let num_runs = 15;
+    let num_runs = 1;
     let chunk_size = 100;
-
+/* 
     //seq
     delete_output_content(output_folder);
     let total_start_time = Instant::now();
@@ -56,7 +56,7 @@ fn main() {
     let total_elapsed_time = total_end_time - total_start_time;
     let average_time = total_elapsed_time / num_runs as u32;
     println!("Average time for {} runs: {:?}", num_runs, average_time);
-
+*/
     //par full 2
     delete_output_content(output_folder);
     let total_start_time = Instant::now();
